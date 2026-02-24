@@ -7,8 +7,8 @@ import os
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
 
 def build_prompt(product_name, category, your_price, cost, units_sold,
                  elasticity_label, margin, competitor_data, goal):
