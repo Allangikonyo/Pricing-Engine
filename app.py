@@ -1,357 +1,309 @@
 # app.py
-# Streamlit frontend — ties everything together
-
-# app.py
-# Streamlit frontend — Black/Gold Data Dashboard UI
+# Streamlit frontend — Warm & Trustworthy Business Dashboard
 
 import streamlit as st
 from engine.elasticity import calculate_elasticity, interpret_elasticity, get_margin
 from engine.competitor import analyze_competitors
 from engine.recommender import get_recommendation
 
-# --- Page Config ---
-st.set_page_config(page_title="Pricing Intelligence Engine", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Pricing Intelligence", page_icon="📈", layout="wide")
 
-# --- Custom CSS ---
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
 
-/* Base */
 html, body, [class*="css"] {
-    font-family: 'Syne', sans-serif;
-    background-color: #0a0a0a;
-    color: #e8e8e8;
+    font-family: 'DM Sans', sans-serif;
+    background-color: #0f1729;
+    color: #e8eaf0;
 }
 
-.stApp {
-    background: #0a0a0a;
-}
+.stApp { background: #0f1729; }
+#MainMenu, footer, header { visibility: hidden; }
 
-/* Hide streamlit branding */
-#MainMenu, footer, header {visibility: hidden;}
-
-/* Main container */
 .block-container {
-    padding: 2rem 3rem;
-    max-width: 1400px;
+    padding: 2.5rem 3rem;
+    max-width: 1300px;
 }
 
-/* Header */
-.dashboard-header {
-    border-bottom: 1px solid #C9A84C;
+.app-header {
+    margin-bottom: 2.5rem;
     padding-bottom: 1.5rem;
-    margin-bottom: 2rem;
+    border-bottom: 1px solid #1e2d4a;
+}
+.app-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    color: #f0f2f7;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+    margin: 0 0 0.3rem 0;
+}
+.app-title span { color: #E8A838; }
+.app-tagline {
+    font-size: 0.8rem;
+    color: #5a6a8a;
+    font-weight: 400;
+    letter-spacing: 0.3px;
 }
 
-.dashboard-title {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 2.2rem;
-    color: #C9A84C;
-    letter-spacing: -0.5px;
-    margin: 0;
-}
-
-.dashboard-subtitle {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    color: #666;
-    letter-spacing: 2px;
+.section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    margin-top: 0.3rem;
+    color: #E8A838;
+    margin: 1.75rem 0 0.85rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1e2d4a;
 }
 
-/* Section labels */
-.section-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #C9A84C;
-    border-left: 2px solid #C9A84C;
-    padding-left: 0.75rem;
-    margin-bottom: 1rem;
-    margin-top: 1.5rem;
+.stTextInput label, .stNumberInput label, .stSelectbox label {
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+    color: #7a8aaa !important;
+    letter-spacing: 0.3px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 0.3rem !important;
 }
 
-/* Input styling */
 .stTextInput > div > div > input,
-.stNumberInput > div > div > input,
-.stSelectbox > div > div {
-    background: #111111 !important;
-    border: 1px solid #2a2a2a !important;
-    border-radius: 4px !important;
-    color: #e8e8e8 !important;
-    font-family: 'Space Mono', monospace !important;
-    font-size: 0.85rem !important;
+.stNumberInput > div > div > input {
+    background: #162035 !important;
+    border: 1px solid #1e2d4a !important;
+    border-radius: 8px !important;
+    color: #e8eaf0 !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.92rem !important;
+    padding: 0.6rem 0.85rem !important;
+    transition: border-color 0.2s !important;
 }
 
 .stTextInput > div > div > input:focus,
 .stNumberInput > div > div > input:focus {
-    border-color: #C9A84C !important;
-    box-shadow: 0 0 0 1px #C9A84C !important;
+    border-color: #E8A838 !important;
+    box-shadow: 0 0 0 3px rgba(232, 168, 56, 0.1) !important;
 }
 
-/* Labels */
-.stTextInput label, .stNumberInput label, .stSelectbox label {
-    font-family: 'Space Mono', monospace !important;
-    font-size: 0.7rem !important;
-    letter-spacing: 1px !important;
-    color: #888 !important;
-    text-transform: uppercase !important;
+.stSelectbox > div > div {
+    background: #162035 !important;
+    border: 1px solid #1e2d4a !important;
+    border-radius: 8px !important;
+    color: #e8eaf0 !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 0.92rem !important;
 }
 
-/* Metric cards */
 .metric-card {
-    background: #111111;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
-    padding: 1.25rem 1.5rem;
-    position: relative;
-    overflow: hidden;
+    background: #162035;
+    border: 1px solid #1e2d4a;
+    border-radius: 10px;
+    padding: 1.25rem 1.4rem;
+    transition: border-color 0.2s;
 }
-
-.metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: #C9A84C;
-}
-
-.metric-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 2px;
-    color: #666;
+.metric-card:hover { border-color: #2a3d5a; }
+.metric-card-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1px;
     text-transform: uppercase;
+    color: #5a6a8a;
     margin-bottom: 0.5rem;
 }
-
-.metric-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: #C9A84C;
-    line-height: 1;
+.metric-card-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.9rem;
+    color: #E8A838;
+    line-height: 1.1;
+}
+.metric-card-sub {
+    font-size: 0.72rem;
+    color: #4a5a7a;
+    margin-top: 0.3rem;
 }
 
-.metric-sub {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    color: #555;
-    margin-top: 0.4rem;
-}
-
-/* Generate button */
 .stButton > button {
-    background: #C9A84C !important;
-    color: #0a0a0a !important;
-    font-family: 'Syne', sans-serif !important;
+    background: #E8A838 !important;
+    color: #0f1729 !important;
+    font-family: 'DM Sans', sans-serif !important;
     font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    letter-spacing: 2px !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 1px !important;
     text-transform: uppercase !important;
     border: none !important;
-    border-radius: 4px !important;
-    padding: 0.75rem 2rem !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1.5rem !important;
     width: 100% !important;
-    transition: all 0.2s !important;
+    transition: all 0.2s ease !important;
+    margin-top: 0.5rem !important;
 }
-
 .stButton > button:hover {
-    background: #e0bc6a !important;
+    background: #f0b940 !important;
+    box-shadow: 0 4px 16px rgba(232, 168, 56, 0.25) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 20px rgba(201, 168, 76, 0.3) !important;
 }
 
-/* Recommendation box */
-.rec-box {
-    background: #0f0f0f;
-    border: 1px solid #C9A84C;
-    border-radius: 6px;
-    padding: 2rem;
-    margin-top: 1rem;
-    position: relative;
+.rec-container {
+    background: #162035;
+    border: 1px solid #E8A838;
+    border-radius: 10px;
+    padding: 1.75rem 2rem;
+    margin-top: 1.5rem;
 }
-
-.rec-box::before {
-    content: '◆ AI RECOMMENDATION';
-    font-family: 'Space Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 3px;
-    color: #C9A84C;
-    position: absolute;
-    top: -0.6rem;
-    left: 1.5rem;
-    background: #0f0f0f;
-    padding: 0 0.5rem;
-}
-
-.rec-text {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    line-height: 1.7;
-    color: #e8e8e8;
-}
-
-/* Divider */
-.gold-divider {
-    height: 1px;
-    background: linear-gradient(to right, #C9A84C, transparent);
-    margin: 2rem 0;
-}
-
-/* Price bar chart */
-.price-bar-container {
-    background: #111;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
-    padding: 1.5rem;
-    margin-top: 1rem;
-}
-
-.price-bar-title {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 2px;
-    color: #666;
+.rec-header {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
+    color: #E8A838;
     margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.rec-header::before { content: '●'; font-size: 0.5rem; }
+.rec-body {
+    font-size: 0.97rem;
+    line-height: 1.75;
+    color: #c8ccd8;
+    font-weight: 400;
 }
 
+.chart-container {
+    background: #162035;
+    border: 1px solid #1e2d4a;
+    border-radius: 10px;
+    padding: 1.25rem 1.4rem;
+    margin-top: 1rem;
+}
+.chart-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #5a6a8a;
+    margin-bottom: 1.1rem;
+}
 .bar-row {
     display: flex;
     align-items: center;
-    margin-bottom: 0.75rem;
     gap: 0.75rem;
+    margin-bottom: 0.65rem;
 }
-
-.bar-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    color: #888;
-    width: 80px;
+.bar-name {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #7a8aaa;
+    width: 72px;
     flex-shrink: 0;
+    letter-spacing: 0.5px;
 }
-
 .bar-track {
     flex: 1;
-    background: #1a1a1a;
-    height: 24px;
-    border-radius: 2px;
+    background: #0f1729;
+    border-radius: 4px;
+    height: 28px;
     overflow: hidden;
 }
-
-.bar-fill {
+.bar-you {
+    background: linear-gradient(90deg, #E8A838, #f0b940);
     height: 100%;
-    border-radius: 2px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
-    padding-left: 8px;
+    padding-left: 10px;
+    min-width: 40px;
 }
-
-.bar-fill-you {
-    background: #C9A84C;
+.bar-comp {
+    background: #1e2d4a;
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    min-width: 40px;
 }
+.bar-you-label { font-size: 0.72rem; font-weight: 700; color: #0f1729; }
+.bar-comp-label { font-size: 0.72rem; font-weight: 600; color: #7a8aaa; }
 
-.bar-fill-comp {
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
-}
-
-.bar-price {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    color: #0a0a0a;
-    font-weight: bold;
-}
-
-.bar-price-comp {
-    color: #888;
-}
-
-/* Warning / success */
-.stAlert {
-    background: #111 !important;
-    border-color: #C9A84C !important;
-    color: #e8e8e8 !important;
-}
-
-/* Spinner */
-.stSpinner > div {
-    border-top-color: #C9A84C !important;
-}
-
-/* Sidebar-like panel */
-.info-panel {
-    background: #111;
-    border: 1px solid #1e1e1e;
-    border-radius: 6px;
-    padding: 1rem 1.25rem;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    color: #555;
+.empty-state {
+    background: #162035;
+    border: 1px dashed #1e2d4a;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    color: #3a4a6a;
+    font-size: 0.8rem;
     line-height: 1.8;
 }
+
+.soft-divider { height: 1px; background: #1e2d4a; margin: 1.5rem 0; }
+.stSpinner > div { border-top-color: #E8A838 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Header ---
+# ── Header ──
 st.markdown("""
-<div class="dashboard-header">
-    <div class="dashboard-title">📊 PRICING INTELLIGENCE ENGINE</div>
-    <div class="dashboard-subtitle">AI-Powered Demand Elasticity & Competitor Analysis</div>
+<div class="app-header">
+    <div class="app-title">📈 Pricing <span>Intelligence</span> Engine</div>
+    <div class="app-tagline">Enter your product details and get an AI-powered pricing recommendation in seconds</div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- Layout: Two columns ---
-left_col, right_col = st.columns([3, 2], gap="large")
+# ── Initialize inputs with defaults ──
+comp1 = comp2 = comp3 = old_price = old_units = 0.0
 
-with left_col:
+# ── Two column layout ──
+left, right = st.columns([3, 2], gap="large")
 
-    # Product Details
-    st.markdown('<div class="section-label">01 — Product Details</div>', unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
+with left:
+    st.markdown('<div class="section-header">Product Details</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
         product_name = st.text_input("Product Name", placeholder="e.g. Handmade Soy Candle")
-        your_price = st.number_input("Current Price ($)", min_value=0.0, step=0.01)
-    with col2:
-        category = st.selectbox("Category", ["Handmade Goods", "Electronics", "Clothing", "Food & Beverage", "Home & Garden", "Other"])
-        cost = st.number_input("Cost to Make/Source ($)", min_value=0.0, step=0.01)
+        your_price = st.number_input("Your Current Price ($)", min_value=0.0, step=0.01)
+    with c2:
+        category = st.selectbox("Category", [
+            "Handmade Goods", "Electronics", "Clothing",
+            "Food & Beverage", "Home & Garden", "Other"
+        ])
+        cost = st.number_input("Cost to Make / Source ($)", min_value=0.0, step=0.01)
 
     units_sold = st.number_input("Units Sold Per Month", min_value=0, step=1)
 
-    st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="soft-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Price History — Optional</div>', unsafe_allow_html=True)
+    st.caption("Unlocks demand elasticity analysis. Enter your previous price and sales to see how sensitive your buyers are to price changes.")
 
-    # Price History
-    st.markdown('<div class="section-label">02 — Price History (Optional)</div>', unsafe_allow_html=True)
-    col3, col4 = st.columns(2)
-    with col3:
+    c3, c4 = st.columns(2)
+    with c3:
         old_price = st.number_input("Previous Price ($)", min_value=0.0, step=0.01)
-    with col4:
-        old_units = st.number_input("Units Sold at Previous Price", min_value=0, step=1)
+    with c4:
+        old_units = st.number_input("Units Sold at That Price", min_value=0, step=1)
 
-    st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="soft-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Competitor Prices</div>', unsafe_allow_html=True)
+    st.caption("Look up what similar products sell for and enter them below.")
 
-    # Competitor Pricing
-    st.markdown('<div class="section-label">03 — Competitor Pricing</div>', unsafe_allow_html=True)
-    col5, col6, col7 = st.columns(3)
-    with col5:
+    c5, c6, c7 = st.columns(3)
+    with c5:
         comp1 = st.number_input("Competitor 1 ($)", min_value=0.0, step=0.01)
-    with col6:
+    with c6:
         comp2 = st.number_input("Competitor 2 ($)", min_value=0.0, step=0.01)
-    with col7:
+    with c7:
         comp3 = st.number_input("Competitor 3 ($)", min_value=0.0, step=0.01)
 
-    st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="soft-divider"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Your Goal</div>', unsafe_allow_html=True)
 
-    # Goal
-    st.markdown('<div class="section-label">04 — Seller Goal</div>', unsafe_allow_html=True)
-    goal = st.selectbox("Optimization Target", [
+    goal = st.selectbox("What are you trying to achieve?", [
         "Maximize Profit",
         "Maximize Sales Volume",
         "Beat Competitors",
@@ -359,118 +311,100 @@ with left_col:
     ])
 
     st.markdown("<br>", unsafe_allow_html=True)
-    generate = st.button("⚡ GENERATE PRICING RECOMMENDATION")
+    generate = st.button("✦ Generate My Pricing Recommendation")
 
-with right_col:
-    st.markdown('<div class="section-label">Live Metrics</div>', unsafe_allow_html=True)
-
-    # Calculate live margin
-    live_margin = get_margin(your_price, cost) if your_price > 0 and cost > 0 else None
+with right:
     competitor_prices_live = [p for p in [comp1, comp2, comp3] if p > 0]
-    live_comp_data = analyze_competitors(your_price, competitor_prices_live) if competitor_prices_live and your_price > 0 else None
+    live_comp = analyze_competitors(your_price, competitor_prices_live) if competitor_prices_live and your_price > 0 else None
+    live_margin = get_margin(your_price, cost) if your_price > 0 and cost > 0 else None
+    live_revenue = round(your_price * units_sold, 2) if your_price > 0 and units_sold > 0 else None
 
-    # Metric cards
+    st.markdown('<div class="section-header">Live Metrics</div>', unsafe_allow_html=True)
+
     m1, m2 = st.columns(2)
     with m1:
-        margin_display = f"{live_margin}%" if live_margin is not None else "—"
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Profit Margin</div>
-            <div class="metric-value">{margin_display}</div>
-            <div class="metric-sub">per unit sold</div>
-        </div>
-        """, unsafe_allow_html=True)
-
+            <div class="metric-card-label">Profit Margin</div>
+            <div class="metric-card-value">{f"{live_margin}%" if live_margin is not None else "—"}</div>
+            <div class="metric-card-sub">per unit</div>
+        </div>""", unsafe_allow_html=True)
     with m2:
-        gap_display = f"{live_comp_data['price_gap_percent']}%" if live_comp_data else "—"
-        pos_display = live_comp_data['position'].replace('priced ', '') if live_comp_data else "no data"
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">vs Market</div>
-            <div class="metric-value">{gap_display}</div>
-            <div class="metric-sub">{pos_display}</div>
-        </div>
-        """, unsafe_allow_html=True)
+            <div class="metric-card-label">Monthly Revenue</div>
+            <div class="metric-card-value">{f"${live_revenue:,}" if live_revenue else "—"}</div>
+            <div class="metric-card-sub">at current price</div>
+        </div>""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
     m3, m4 = st.columns(2)
     with m3:
-        avg_comp = f"${live_comp_data['avg_competitor_price']}" if live_comp_data else "—"
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Avg Competitor</div>
-            <div class="metric-value">{avg_comp}</div>
-            <div class="metric-sub">market average</div>
-        </div>
-        """, unsafe_allow_html=True)
-
+            <div class="metric-card-label">Avg Competitor</div>
+            <div class="metric-card-value">{f"${live_comp['avg_competitor_price']}" if live_comp else "—"}</div>
+            <div class="metric-card-sub">market average</div>
+        </div>""", unsafe_allow_html=True)
     with m4:
-        revenue = round(your_price * units_sold, 2) if your_price > 0 and units_sold > 0 else None
-        rev_display = f"${revenue}" if revenue else "—"
+        pos = live_comp['position'].replace('priced ', '').title() if live_comp else "—"
+        gap = f"{live_comp['price_gap_percent']}%" if live_comp else "—"
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-label">Monthly Revenue</div>
-            <div class="metric-value">{rev_display}</div>
-            <div class="metric-sub">at current price</div>
-        </div>
-        """, unsafe_allow_html=True)
+            <div class="metric-card-label">Market Position</div>
+            <div class="metric-card-value">{gap}</div>
+            <div class="metric-card-sub">{pos}</div>
+        </div>""", unsafe_allow_html=True)
 
-    # Price comparison bar chart
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Price Comparison</div>', unsafe_allow_html=True)
+
     if your_price > 0 and competitor_prices_live:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown('<div class="section-label">Price Comparison</div>', unsafe_allow_html=True)
-
         all_prices = [your_price] + competitor_prices_live
-        max_price = max(all_prices)
+        max_p = max(all_prices)
 
-        bars_html = '<div class="price-bar-container"><div class="price-bar-title">Your Price vs Competitors</div>'
-
-        your_width = round((your_price / max_price) * 100)
-        bars_html += f"""
+        chart = '<div class="chart-container"><div class="chart-title">Your Price vs Competitors</div>'
+        yw = max(12, round((your_price / max_p) * 100))
+        chart += f"""
         <div class="bar-row">
-            <div class="bar-label">YOU</div>
+            <div class="bar-name">YOU</div>
             <div class="bar-track">
-                <div class="bar-fill bar-fill-you" style="width:{your_width}%">
-                    <span class="bar-price">${your_price}</span>
+                <div class="bar-you" style="width:{yw}%">
+                    <span class="bar-you-label">${your_price}</span>
                 </div>
             </div>
         </div>"""
-
         for i, cp in enumerate(competitor_prices_live):
-            w = round((cp / max_price) * 100)
-            bars_html += f"""
+            cw = max(12, round((cp / max_p) * 100))
+            chart += f"""
             <div class="bar-row">
-                <div class="bar-label">COMP {i+1}</div>
+                <div class="bar-name">COMP {i+1}</div>
                 <div class="bar-track">
-                    <div class="bar-fill bar-fill-comp" style="width:{w}%">
-                        <span class="bar-price bar-price-comp">${cp}</span>
+                    <div class="bar-comp" style="width:{cw}%">
+                        <span class="bar-comp-label">${cp}</span>
                     </div>
                 </div>
             </div>"""
-
-        bars_html += '</div>'
-        st.markdown(bars_html, unsafe_allow_html=True)
-
+        chart += '</div>'
+        st.markdown(chart, unsafe_allow_html=True)
     else:
         st.markdown("""
-        <div class="info-panel">
-            ENTER YOUR PRICE + COMPETITOR<br>
-            PRICES TO SEE LIVE COMPARISON<br>
-            CHART AND MARKET METRICS.
-        </div>
-        """, unsafe_allow_html=True)
+        <div class="empty-state">
+            Enter your price and at least<br>
+            one competitor price to see<br>
+            the comparison chart
+        </div>""", unsafe_allow_html=True)
 
-# --- Generate Logic ---
+# ── Generate ──
 if generate:
     if not product_name:
-        st.warning("⚠ Please enter a product name.")
+        st.warning("Please enter a product name to continue.")
     elif your_price == 0:
-        st.warning("⚠ Please enter your current price.")
+        st.warning("Please enter your current price.")
     elif cost == 0:
-        st.warning("⚠ Please enter your cost.")
+        st.warning("Please enter your production or sourcing cost.")
     else:
-        with st.spinner("Running analysis..."):
+        with st.spinner("Analyzing your pricing data..."):
             elasticity = calculate_elasticity(old_price, your_price, old_units, units_sold) if old_price > 0 and old_units > 0 else None
             elasticity_label = interpret_elasticity(elasticity)
             margin = get_margin(your_price, cost)
@@ -482,9 +416,9 @@ if generate:
                 elasticity_label, margin, competitor_data, goal
             )
 
-        st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f"""
-        <div class="rec-box">
-            <div class="rec-text">{recommendation}</div>
+        <div class="rec-container">
+            <div class="rec-header">AI Pricing Recommendation</div>
+            <div class="rec-body">{recommendation}</div>
         </div>
         """, unsafe_allow_html=True)
